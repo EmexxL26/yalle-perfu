@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Inicial</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(to right, rgba(139,0,75,0.7), rgba(0,0,0,0.7)), 
+                  url('fundo.png') no-repeat center center fixed;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      animation: fadeIn 2s ease-in-out;
+    }
+
+    h1 {
+      margin-top: 100px;
+      font-size: 60px;
+      color: #fff;
+      animation: glow 2s infinite alternate;
+    }
+
+    .menu {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 30px;
+      margin-top: 50px;
+      animation: slideUp 1.5s ease-out;
+    }
+
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      width: 220px;
+      cursor: pointer;
+      transition: 0.4s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: scale(1.1) rotate(-2deg);
+      background: #f1f1f1;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+
+    .card h2 {
+      font-size: 22px;
+      color: #2c3e50;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Caixa da assistente */
+    .assistant {
+      margin: 40px auto;
+      width: 80%;
+      max-width: 600px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding: 20px;
+      display: none; /* começa escondida */
+      text-align: left;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    .assistant h3 {
+      margin-top: 0;
+      color: #8B004B;
+    }
+
+    .chat-box {
+      height: 250px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fafafa;
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .chat-input button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #8B004B;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .chat-input button:hover {
+      background: #a8005c;
+    }
+
+    /* Keyframes */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 10px #ff00aa, 0 0 20px #ff00aa; }
+      to { text-shadow: 0 0 20px #ff66cc, 0 0 40px #ff66cc; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Painel Inicial 🌟</h1>
+  <div class="menu">
+    <div class="card" onclick="toggleAssistant()">
+      <h2>🤖 Assistente Virtual</h2>
+    </div>
+    <div class="card" onclick="location.href='planilhas.html'">
+      <h2>📊 Planilhas</h2>
+    </div>
+    <div class="card" onclick="location.href='estoque.html'">
+      <h2>📦 Estoque</h2>
+    </div>
+    <div class="card" onclick="location.href='relatorios.html'">
+      <h2>📑 Relatórios</h2>
+    </div>
+    <div class="card" onclick="location.href='faturamento.html'">
+      <h2>💰 Faturamento Anual</h2>
+    </div>
+    <div class="card" onclick="location.href='configuracoes.html'">
+      <h2>⚙️ Configurações</h2>
+    </div>
+  </div>
+
+  <!-- Caixa da Assistente Virtual -->
+  <div class="assistant" id="assistant">
+    <h3>Assistente Virtual 🤖</h3>
+    <div class="chat-box" id="chatBox">
+      <p><b>Assistente:</b> Olá! Sou sua assistente virtual. O que você gostaria de fazer hoje?</p>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="userInput" placeholder="Digite sua mensagem...">
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleAssistant() {
+      const box = document.getElementById('assistant');
+      box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('userInput');
+      const chatBox = document.getElementById('chatBox');
+      const userText = input.value.trim();
+      if(userText !== "") {
+        chatBox.innerHTML += "<p><b>Você:</b> " + userText + "</p>";
+        
+        // Aqui você pode integrar com uma API de IA real (ex: Copilot, GPT, etc.)
+        // Por enquanto, vamos simular uma resposta automática:
+        let resposta = "";
+        if(userText.toLowerCase().includes("planilha")) {
+          resposta = "Posso te ajudar a abrir ou criar uma nova planilha.";
+        } else if(userText.toLowerCase().includes("estoque")) {
+          resposta = "Quer visualizar o estoque atual ou atualizar os itens?";
+        } else {
+          resposta = "Entendi! Você disse: '" + userText + "'. Ainda estou aprendendo, mas posso te ajudar com relatórios, planilhas e mais.";
+        }
+
+        chatBox.innerHTML += "<p><b>Assistente:</b> " + resposta + "</p>";
+        input.value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    }
+  </script>
+</body>
+</html>

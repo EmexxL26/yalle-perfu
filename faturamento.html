@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Faturamento Anual</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 { color: #2c3e50; margin-bottom: 30px; }
+    section {
+      background: #fff;
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      width: 85%;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 12px;
+      text-align: center;
+    }
+    th { background: #2c3e50; color: white; }
+    .toolbar { margin: 20px; }
+    .toolbar select, .toolbar button {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: none;
+      margin: 5px;
+      cursor: pointer;
+    }
+    .toolbar button {
+      background: #2c3e50; color: white;
+    }
+    .toolbar button:hover { background: #16a085; }
+    canvas {
+      margin-top: 30px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 Faturamento Anual</h1>
+
+  <div class="toolbar">
+    <label for="ano">Selecione o ano:</label>
+    <select id="ano"></select>
+    <button onclick="carregarRelatorio()">📂 Carregar Relatório</button>
+    <button onclick="salvarPDF()">💾 Salvar como PDF</button>
+  </div>
+
+  <div id="conteudo"></div>
+
+  <!-- Bibliotecas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    const vendas = JSON.parse(localStorage.getItem("vendas")) || [];
+    const despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+
+    function gerarAnos() {
+      const select = document.getElementById("ano");
+      select.innerHTML = "";
+      const anos = new Set([
+        ...vendas.map(v => v.data.split("-")[0]),
+        ...despesas.map(d => d.data.split("-")[0])
+      ]);
+      [...anos].sort().forEach(ano => {
+        const option = document.createElement("option");
+        option.value = ano;
+        option.textContent = ano;
+        select.appendChild(option);
+      });
+    }
+
+    function carregarRelatorio() {
+      const ano = document.getElementById("ano").value;
+      const vendasAno = vendas.filter(v => v.data.startsWith(ano));
+      const despesasAno = despesas.filter(d => d.data.startsWith(ano));
+
+      const receita = vendasAno.reduce((acc,v) => acc + v.valor, 0);
+      const totalDespesas = despesasAno.reduce((acc,d) => acc + d.valor, 0);
+      const lucro = receita - totalDespesas;
+
+      let conteudoHTML = `
+        <section>
+          <h2>Resumo Executivo</h2>
+          <p>Relatório referente ao ano <strong>${ano}</strong>.</p>
+          <p><strong>Receita Total:</strong> R$ ${receita.toLocaleString("pt-BR")}</p>
+          <p><strong>Despesas:</strong> R$ ${totalDespesas.toLocaleString("pt-BR")}</p>
+          <p><strong>Lucro Líquido:</strong> R$ ${lucro.toLocaleString("pt-BR")}</p>
+        </section>
+      `;
+
+      // Vendas
+      conteudoHTML += `
+        <section>
+          <h2>Vendas do Ano</h2>
+          <table id="tabelaVendas">
+            <tr><th>Data</th><th>Produto</th><th>Quantidade</th><th>Valor</th></tr>
+      `;
+      vendasAno.slice(0, 10).forEach(v => {
+        conteudoHTML += `
+          <tr>
+            <td>${v.data}</td>
+            <td>${v.nome}</td>
+            <td>${v.qtd}</td>
+            <td>R$ ${v.valor.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      conteudoHTML += `</table>`;
+      if (vendasAno.length > 10) {
+        conteudoHTML += `<button onclick="mostrarTudo('vendas','${ano}')">Ver mais</button>`;
+      }
+      conteudoHTML += `</section>`;
+
+      // Despesas
+      conteudoHTML += `
+        <section>
+          <h2>Despesas do Ano</h2>
+          <table id="tabelaDespesas">
+            <tr><th>Data</th><th>Descrição</th><th>Valor</th></tr>
+      `;
+      despesasAno.slice(0, 10).forEach(d => {
+        conteudoHTML += `
+          <tr>
+            <td>${d.data}</td>
+            <td>${d.descricao || "Despesa"}</td>
+            <td>R$ ${d.valor.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      conteudoHTML += `</table>`;
+      if (despesasAno.length > 10) {
+        conteudoHTML += `<button onclick="mostrarTudo('despesas','${ano}')">Ver mais</button>`;
+      }
+      conteudoHTML += `</section>`;
+
+      // Gráfico
+      conteudoHTML += `<canvas id="graficoAnual" width="600" height="300"></canvas>`;
+      document.getElementById("conteudo").innerHTML = conteudoHTML;
+
+      const ctx = document.getElementById("graficoAnual").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["Receita", "Despesas", "Lucro"],
+          datasets: [{
+            label: `Faturamento ${ano}`,
+            data: [receita, totalDespesas, lucro],
+            backgroundColor: ["#2c3e50","#e74c3c","#16a085"]
+          }]
+        }
+      });
+    }
+
+    function mostrarTudo(tipo, ano) {
+      if (tipo === "vendas") {
+        const tabela = document.getElementById("tabelaVendas");
+        const vendasAno = vendas.filter(v => v.data.startsWith(ano));
+        vendasAno.slice(10).forEach(v => {
+          tabela.innerHTML += `
+            <tr>
+              <td>${v.data}</td>
+              <td>${v.nome}</td>
+              <td>${v.qtd}</td>
+              <td>R$ ${v.valor.toFixed(2)}</td>
+            </tr>
+          `;
+        });
+      } else {
+        const tabela = document.getElementById("tabelaDespesas");
+        const despesasAno = despesas.filter(d => d.data.startsWith(ano));
+        despesasAno.slice(10).forEach(d => {
+          tabela.innerHTML += `
+            <tr>
+              <td>${d.data}</td>
+              <td>${d.descricao || "Despesa"}</td>
+              <td>R$ ${d.valor.toFixed(2)}</td>
+            </tr>
+          `;
+        });
+      }
+      event.target.remove(); // remove botão após expandir
+    }
+
+    async function salvarPDF() {
+      const { jsPDF } = window.jspdf;
+      const conteudo = document.getElementById("conteudo");
+      const canvas = await html2canvas(conteudo, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const largura = pdf.internal.pageSize.getWidth();
+      const altura = (canvas.height * largura) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, largura, altura);
+      pdf.save("faturamento-anual.pdf");
+    }
+
+    gerarAnos();
+    carregarRelatorio();
+  </script>
+</body>
+</html>

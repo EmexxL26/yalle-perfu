@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Configurações</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f6fa;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      text-align: center;
+      font-size: 40px;
+      color: #2c3e50;
+      padding: 20px;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      margin: 0;
+    }
+    .container {
+      width: 80%;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      padding: 20px;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .section h2 {
+      color: #2c3e50;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    .option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .option label {
+      font-size: 18px;
+      color: #333;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2c3e50;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      padding: 15px;
+      background-color: rgba(0,0,0,0.1);
+      color: #2c3e50;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚙️ Configurações</h1>
+  <div class="container">
+
+    <!-- Seção de Conta -->
+    <div class="section">
+      <h2>Conta</h2>
+      <div class="option">
+        <label>Alterar senha</label>
+        <button onclick="alert('Função de alterar senha')">Editar</button>
+      </div>
+      <div class="option">
+        <label>Atualizar foto de perfil</label>
+        <button onclick="alert('Função de atualizar foto')">Editar</button>
+      </div>
+    </div>
+
+    <!-- Seção de Privacidade -->
+    <div class="section">
+      <h2>Privacidade</h2>
+      <div class="option">
+        <label>Mostrar status online</label>
+        <label class="switch">
+          <input type="checkbox" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="option">
+        <label>Permitir notificações por e-mail</label>
+        <label class="switch">
+          <input type="checkbox">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Seção de Aparência -->
+    <div class="section">
+      <h2>Aparência</h2>
+      <div class="option">
+        <label>Modo escuro</label>
+        <label class="switch">
+          <input type="checkbox" onchange="toggleDarkMode(this)">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    🌟 "Configurações bem feitas tornam sua experiência melhor."
+  </footer>
+
+  <script>
+    function toggleDarkMode(checkbox) {
+      if (checkbox.checked) {
+        document.body.style.background = "#2c3e50";
+        document.body.style.color = "#fff";
+      } else {
+        document.body.style.background = "linear-gradient(to right, #74ebd5, #ACB6E5)";
+        document.body.style.color = "#000";
+      }
+    }
+  </script>
+</body>
+</html>

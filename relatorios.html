@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatórios Empresariais</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(to right, #f8c8dc, #fbeec1); margin: 0; padding: 20px; }
+    h1 { text-align: center; font-size: 40px; color: #2c3e50; }
+    section { background: #fff; margin: 20px auto; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 90%; }
+    h2 { color: #2c3e50; margin-bottom: 10px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #2c3e50; color: white; }
+    canvas { margin-top: 20px; }
+    .toolbar { text-align: center; margin: 20px; }
+    .toolbar select, .toolbar button { padding: 10px 20px; border-radius: 6px; border: none; margin: 5px; cursor: pointer; }
+    .toolbar button { background: #2c3e50; color: white; }
+    .toolbar button:hover { background: #16a085; }
+    footer { text-align: center; margin-top: 30px; padding: 15px; background-color: rgba(0,0,0,0.2); color: #2c3e50; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>📑 Relatório Empresarial</h1>
+
+  <div class="toolbar">
+    <label for="mes">Selecione o mês:</label>
+    <select id="mes"></select>
+    <button onclick="carregarRelatorio()">📂 Carregar Relatório</button>
+    <button onclick="salvarPDF()">💾 Salvar como PDF</button>
+  </div>
+
+  <!-- Formulário de despesas -->
+  <form id="formDespesa" style="text-align:center; margin:20px;">
+    <input type="date" id="dataDespesa" required>
+    <input type="text" id="descricaoDespesa" placeholder="Descrição da despesa" required>
+    <input type="number" id="valorDespesa" placeholder="Valor (R$)" step="0.01" required>
+    <button type="submit">➕ Adicionar Despesa</button>
+  </form>
+
+  <div id="conteudo"></div>
+
+  <footer>
+    🌟 "Relatórios claros ajudam a tomar decisões melhores."
+  </footer>
+
+  <!-- Bibliotecas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+
+    function gerarMeses() {
+      const select = document.getElementById("mes");
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mesAtual = hoje.getMonth();
+      const nomesMeses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+      select.innerHTML = "";
+      for (let m = 0; m <= mesAtual; m++) {
+        const valor = `${ano}-${String(m+1).padStart(2,"0")}`;
+        const option = document.createElement("option");
+        option.value = valor;
+        option.textContent = `${nomesMeses[m]}/${ano}`;
+        select.appendChild(option);
+      }
+      select.value = `${ano}-${String(mesAtual+1).padStart(2,"0")}`;
+    }
+
+    document.getElementById("formDespesa").addEventListener("submit", e => {
+      e.preventDefault();
+      const data = document.getElementById("dataDespesa").value;
+      const descricao = document.getElementById("descricaoDespesa").value;
+      const valor = parseFloat(document.getElementById("valorDespesa").value);
+      despesas.push({ data, descricao, valor });
+      localStorage.setItem("despesas", JSON.stringify(despesas));
+      alert("Despesa registrada com sucesso!");
+      e.target.reset();
+      carregarRelatorio();
+    });
+
+    function carregarRelatorio() {
+      const mes = document.getElementById("mes").value;
+      const vendas = JSON.parse(localStorage.getItem("vendas")) || [];
+
+      const vendasMes = vendas.filter(v => v.data.startsWith(mes));
+      const receita = vendasMes.reduce((acc,v) => acc + v.valor, 0);
+
+      const despesasMes = despesas.filter(d => d.data.startsWith(mes));
+      const totalDespesas = despesasMes.reduce((acc,d) => acc + d.valor, 0);
+
+      const lucro = receita - totalDespesas;
+
+      if (vendasMes.length === 0 && despesasMes.length === 0) {
+        document.getElementById("conteudo").innerHTML = `
+          <section><h2>Relatório não disponível</h2>
+          <p>Não há dados registrados em ${mes}.</p></section>`;
+        return;
+      }
+
+      // Vendas
+      let tabelaHTML = `<section><h2>Vendas de ${mes}</h2>
+        <table id="tabelaVendas">
+          <tr><th>Data</th><th>Produto</th><th>Quantidade</th><th>Valor</th></tr>`;
+      vendasMes.slice(0,5).forEach(v => {
+        tabelaHTML += `<tr><td>${v.data}</td><td>${v.nome}</td><td>${v.qtd}</td><td>R$ ${v.valor.toFixed(2)}</td></tr>`;
+      });
+      tabelaHTML += `</table>`;
+      if (vendasMes.length > 5) tabelaHTML += `<button onclick="mostrarTudo('vendas','${mes}')">Ver mais</button>`;
+      tabelaHTML += `</section>`;
+
+      // Despesas
+      let despesasHTML = `<section><h2>Despesas de ${mes}</h2>
+        <table id="tabelaDespesas">
+          <tr><th>Data</th><th>Descrição</th><th>Valor</th></tr>`;
+      despesasMes.slice(0,5).forEach(d => {
+        despesasHTML += `<tr><td>${d.data}</td><td>${d.descricao}</td><td>R$ ${d.valor.toFixed(2)}</td></tr>`;
+      });
+      despesasHTML += `</table>`;
+      if (despesasMes.length > 5) despesasHTML += `<button onclick="mostrarTudo('despesas','${mes}')">Ver mais</button>`;
+      despesasHTML += `</section>`;
+
+      const resumoHTML = `<section><h2>Financeiro</h2>
+        <p><strong>Receita Total:</strong> R$ ${receita.toFixed(2)}</p>
+        <p><strong>Despesas:</strong> R$ ${totalDespesas.toFixed(2)}</p>
+        <p><strong>Lucro Líquido:</strong> R$ ${lucro.toFixed(2)}</p></section>`;
+
+      const graficoHTML = `<canvas id="graficoVendas" width="600" height="300"></canvas>`;
+      document.getElementById("conteudo").innerHTML = tabelaHTML + despesasHTML + resumoHTML + graficoHTML;
+
+      const ctx = document.getElementById("graficoVendas").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: vendasMes.map(v => v.nome),
+          datasets: [{ label: "Unidades Vendidas", data: vendasMes.map(v => v.qtd), backgroundColor: "#2c3e50" }]
+        }
+      });
+    }
+
+    function mostrarTudo(tipo, mes) {
+      if (tipo === "vendas") {
+        const vendas = JSON.parse(localStorage.getItem("vendas")) || [];
+        const vendasMes = vendas.filter(v => v.data.startsWith(mes));
+        let tabela = document.getElementById("tabelaVendas");
+        vendasMes.slice(5).forEach(v => {
+          tabela.innerHTML += `<tr><td>${v.data}</td><td>${v.nome}</td><td>${v.qtd}</td><td>R$ ${v.valor.toFixed(2)}</td></tr>`;
+        });
+      } else if (tipo === "despesas") {
+        const despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+        const despesasMes = despesas.filter(d => d.data

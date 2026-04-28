@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Planilha Avançada</title>
+  <style>
+    body { font-family:'Segoe UI',Arial; background:#f5f6fa; margin:0; padding:20px; }
+    header { background:#2c3e50; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+    header h1 { margin:0; font-size:24px; }
+    .toolbar { display:flex; flex-wrap:wrap; gap:10px; }
+    .toolbar button { padding:8px 16px; border:none; border-radius:6px; background:#34495e; color:white; cursor:pointer; }
+    .toolbar button:hover { background:#16a085; }
+    table { border-collapse:collapse; width:95%; margin:20px auto; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+    th,td { border:1px solid #ccc; padding:10px; text-align:center; min-width:100px; }
+    th { background:#2c3e50; color:white; cursor:pointer; }
+    td[contenteditable="true"] { background:#f9f9f9; }
+    #resultado { text-align:center; margin-top:20px; font-size:18px; color:#2c3e50; }
+    footer { text-align:center; padding:15px; background:rgba(0,0,0,0.1); color:#2c3e50; font-size:16px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 Planilha Avançada</h1>
+    <div class="toolbar">
+      <button onclick="adicionarLinha()">➕ Nova Linha</button>
+      <button onclick="removerLinha()">➖ Remover Última</button>
+      <button onclick="somarColuna(2)">Σ Somar Preço</button>
+      <button onclick="mediaColuna(2)">📐 Média Preço</button>
+      <button onclick="maxColuna(2)">⬆️ Máximo Preço</button>
+      <button onclick="minColuna(2)">⬇️ Mínimo Preço</button>
+      <button onclick="exportarCSV()">💾 Exportar CSV</button>
+      <input type="file" id="importarCSV" accept=".csv" onchange="importarCSV(event)">
+    </div>
+  </header>
+
+  <table id="planilha">
+    <thead>
+      <tr>
+        <th onclick="ordenarColuna(0)">Item</th>
+        <th onclick="ordenarColuna(1)">Quantidade</th>
+        <th onclick="ordenarColuna(2)">Preço (R$)</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td contenteditable="true">Produto A</td>
+        <td contenteditable="true">10</td>
+        <td contenteditable="true">5</td>
+        <td>=10*5</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div id="resultado"></div>
+
+  <footer>
+    🌟 "Planilhas poderosas = gestão eficiente."
+  </footer>
+
+  <script>
+    const tabela = document.getElementById("planilha").querySelector("tbody");
+    const resultado = document.getElementById("resultado");
+
+    function adicionarLinha() {
+      const linha = document.createElement("tr");
+      linha.innerHTML = `
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td></td>
+      `;
+      tabela.appendChild(linha);
+    }
+
+    function removerLinha() {
+      if (tabela.rows.length > 0) tabela.deleteRow(tabela.rows.length-1);
+    }
+
+    function mostrarResultado(texto) {
+      resultado.textContent = texto;
+    }
+
+    function somarColuna(index) {
+      let soma = 0;
+      tabela.querySelectorAll("tr").forEach(linha => {
+        const valor = parseFloat(linha.cells[index].textContent);
+        if (!isNaN(valor)) soma += valor;
+      });
+      mostrarResultado("Soma da coluna: R$ " + soma.toFixed(2));
+    }
+
+    function mediaColuna(index) {
+      let soma = 0, count = 0;
+      tabela.querySelectorAll("tr").forEach(linha => {
+        const valor = parseFloat(linha.cells[index].textContent);
+        if (!isNaN(valor)) { soma += valor; count++; }
+      });
+      mostrarResultado("Média da coluna: R$ " + (soma/count).toFixed(2));
+    }
+
+    function maxColuna(index) {
+      let max = -Infinity;
+      tabela.querySelectorAll("tr").forEach(linha => {
+        const valor = parseFloat(linha.cells[index].textContent);
+        if (!isNaN(valor) && valor > max) max = valor;
+      });
+      mostrarResultado("Máximo da coluna: R$ " + max.toFixed(2));
+    }
+
+    function minColuna(index) {
+      let min = Infinity;
+      tabela.querySelectorAll("tr").forEach(linha => {
+        const valor = parseFloat(linha.cells[index].textContent);
+        if (!isNaN(valor) && valor < min) min = valor;
+      });
+      mostrarResultado("Mínimo da coluna: R$ " + min.toFixed(2));
+    }
+
+    function exportarCSV() {
+      let csv = [];
+      document.querySelectorAll("#planilha tr").forEach(row => {
+        let cols = [];
+        row.querySelectorAll("td,th").forEach(cell => cols.push(cell.textContent));
+        csv.push(cols.join(","));
+      });
+      const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "planilha.csv";
+      a.click();
+      mostrarResultado("Arquivo CSV exportado com sucesso!");
+    }
+
+    function importarCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const linhas = e.target.result.split("\n");
+        tabela.innerHTML = "";
+        linhas.slice(1).forEach(linha => {
+          const cols = linha.split(",");
+          if (cols.length >= 3) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td contenteditable="true">${cols[0]}</td>
+              <td contenteditable="true">${cols[1]}</td>
+              <td contenteditable="true">${cols[2]}</td>
+              <td>${cols[3] || ""}</td>
+            `;
+            tabela.appendChild(tr);
+          }
+        });
+        mostrarResultado("Arquivo CSV importado com sucesso!");
+      };
+      reader.readAsText(file);
+    }
+
+    function ordenarColuna(index) {
+      let linhas = Array.from(tabela.rows);
+      linhas.sort((a,b) => {
+        let valA = a.cells[index].textContent.toLowerCase();
+        let valB = b.cells[index].textContent.toLowerCase();
+        return valA.localeCompare(valB, 'pt-BR', {numeric:true});
+      });
+      tabela.innerHTML = "";
+      linhas.forEach(l => tabela.appendChild(l));
+      mostrarResultado("Coluna ordenada com sucesso!");
+    }
+
+    // Atualiza totais automaticamente
+    tabela.addEventListener("input", e => {
+      const linha = e.target.parentElement;
+      const qtd = parseFloat(linha.cells[1].textContent);
+      const preco = parseFloat(linha.cells[2].textContent);
+      if (!isNaN(qtd) && !isNaN(preco)) {
+        linha.cells[3].textContent = (qtd*preco).toFixed(2);
+      }
+    });
+  </script>
+</body>
+</html>

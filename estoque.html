@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Controle de Estoque</title>
+  <style>
+    body { font-family:'Segoe UI',Arial; margin:0; padding:20px;
+           background:linear-gradient(to bottom right,#f8c8dc,#fbeec1);}
+    h1 { text-align:center; color:#2c3e50; }
+    form { margin:20px auto; text-align:center; }
+    input { padding:8px; margin:5px; border-radius:6px; border:1px solid #ccc; }
+    button { padding:10px 20px; border:none; border-radius:8px; background:#2c3e50; color:white; cursor:pointer; }
+    button:hover { background:#16a085; }
+    table { border-collapse:collapse; width:95%; margin:20px auto; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2);}
+    th,td { border:1px solid #ccc; padding:10px; text-align:center; }
+    th { background:#2c3e50; color:white; }
+    .low { background:#ffe6e6; }
+    img { max-width:80px; border-radius:6px; }
+    .toolbar { text-align:center; margin:20px; }
+    #aviso { text-align:center; font-weight:bold; color:#e74c3c; margin-top:20px; }
+  </style>
+</head>
+<body>
+  <h1>📦 Controle de Estoque</h1>
+
+  <!-- Cadastro de produto -->
+  <form id="formProduto">
+    <input type="text" id="sku" placeholder="Código SKU" required>
+    <input type="text" id="nome" placeholder="Nome do produto" required>
+    <input type="number" id="quantidade" placeholder="Quantidade" required>
+    <input type="number" id="preco" placeholder="Preço (R$)" required step="0.01">
+    <input type="file" id="foto" accept="image/*" required>
+    <button type="submit">Adicionar Produto</button>
+  </form>
+
+  <!-- Registrar venda -->
+  <form id="formVenda">
+    <input type="text" id="skuVenda" placeholder="Código SKU" required>
+    <input type="number" id="qtdVenda" placeholder="Quantidade Vendida" required>
+    <button type="submit">Registrar Venda</button>
+  </form>
+
+  <div class="toolbar">
+    <button onclick="salvarBanco()">💾 Salvar Estoque</button>
+    <button onclick="carregarBanco()">📂 Carregar Estoque</button>
+  </div>
+
+  <table id="tabelaEstoque">
+    <thead>
+      <tr>
+        <th>SKU</th><th>Produto</th><th>Quantidade</th><th>Preço (R$)</th><th>Total</th><th>Foto</th><th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="aviso"></div>
+
+  <script>
+    const tabela = document.getElementById("tabelaEstoque").querySelector("tbody");
+    let estoque = JSON.parse(localStorage.getItem("estoque")) || [];
+    let vendas = JSON.parse(localStorage.getItem("vendas")) || [];
+
+    // Cadastro de produto
+    document.getElementById("formProduto").addEventListener("submit", e => {
+      e.preventDefault();
+      const sku = document.getElementById("sku").value;
+      const nome = document.getElementById("nome").value;
+      const qtd = parseInt(document.getElementById("quantidade").value);
+      const preco = parseFloat(document.getElementById("preco").value);
+      const total = (qtd * preco).toFixed(2);
+
+      const fotoInput = document.getElementById("foto");
+      const reader = new FileReader();
+
+      reader.onload = function(evt) {
+        const fotoBase64 = evt.target.result;
+        const produto = { sku, nome, qtd, preco, total, foto: fotoBase64 };
+        estoque.push(produto);
+        localStorage.setItem("estoque", JSON.stringify(estoque));
+        adicionarLinha(produto);
+        verificarAvisos();
+        e.target.reset();
+      };
+      reader.readAsDataURL(fotoInput.files[0]);
+    });
+
+    // Registrar venda
+    document.getElementById("formVenda").addEventListener("submit", e => {
+      e.preventDefault();
+      const sku = document.getElementById("skuVenda").value;
+      const qtd = parseInt(document.getElementById("qtdVenda").value);
+      const data = new Date().toISOString().split("T")[0];
+
+      const produto = estoque.find(p => p.sku === sku);
+      if(produto && produto.qtd >= qtd) {
+        produto.qtd -= qtd;
+        produto.total = (produto.qtd * produto.preco).toFixed(2);
+
+        const valorVenda = qtd * produto.preco;
+        vendas.push({ sku, nome: produto.nome, qtd, valor: valorVenda, data });
+
+        localStorage.setItem("vendas", JSON.stringify(vendas));
+        localStorage.setItem("estoque", JSON.stringify(estoque));
+
+        alert("Venda registrada com sucesso!");
+        carregarBanco();
+      } else {
+        alert("Produto não encontrado ou estoque insuficiente!");
+      }
+    });
+
+    function adicionarLinha(produto) {
+      const linha = document.createElement("tr");
+      if(produto.qtd <= 5) linha.classList.add("low");
+      linha.innerHTML = `
+        <td>${produto.sku}</td>
+        <td>${produto.nome}</td>
+        <td>${produto.qtd}</td>
+        <td>${produto.preco.toFixed(2)}</td>
+        <td>${produto.total}</td>
+        <td><img src="${produto.foto}" alt="${produto.nome}"></td>
+        <td><button onclick="excluirProduto('${produto.sku}', this)">Excluir</button></td>
+      `;
+      tabela.appendChild(linha);
+    }
+
+    function excluirProduto(sku, btn) {
+      estoque = estoque.filter(p => p.sku !== sku);
+      btn.closest("tr").remove();
+      localStorage.setItem("estoque", JSON.stringify(estoque));
+      verificarAvisos();
+    }
+
+    function salvarBanco() {
+      localStorage.setItem("estoque", JSON.stringify(estoque));
+      alert("Estoque salvo com sucesso!");
+    }
+
+    function carregarBanco() {
+      tabela.innerHTML = "";
+      const dados = localStorage.getItem("estoque");
+      if(dados) {
+        estoque = JSON.parse(dados);
+        estoque.forEach(p => adicionarLinha(p));
+        verificarAvisos();
+      }
+    }
+
+    function verificarAvisos() {
+      const avisoDiv = document.getElementById("aviso");
+      const produtosCriticos = estoque.filter(p => p.qtd <= 5);
+      avisoDiv.textContent = produtosCriticos.length > 0
+        ? "⚠️ Atenção: Existem produtos com menos de 5 unidades no estoque!"
+        : "";
+    }
+
+    carregarBanco();
+  </script>
+</body>
+</html>
